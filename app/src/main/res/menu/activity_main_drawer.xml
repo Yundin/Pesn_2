@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/main_menu">
+
+    <group android:checkableBehavior="single"
+           android:id="@+id/group" >
+        <item
+                android:orderInCategory="0"
+                android:checked="true"
+                android:id="@+id/all"
+                android:icon="@drawable/ic_all_inclusive_black_24dp"
+                android:title="Все"/>
+
+    </group>
+
+    <group
+            android:checkableBehavior="none">
+        <item
+                android:orderInCategory="3"
+                android:id="@+id/add"
+                android:icon="@drawable/ic_add_black_24dp"
+                android:title="Добавить категорию"/>
+    </group>
+</menu>

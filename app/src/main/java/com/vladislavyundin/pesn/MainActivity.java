@@ -176,7 +176,7 @@ public class MainActivity extends AppCompatActivity
             subMenu.add(R.id.group, listOfCategories.size() + 1, 1, "Новая категория").setCheckable(true);
             return true;
         } else if (id == 0 && !item.getTitle().equals(listOfCategories.get(0))){
-            initRecyclerView(-2);
+            initRecyclerViewByAuthor(item.getTitle().toString());
         } else {
             initRecyclerView(id);
         }
@@ -204,6 +204,34 @@ public class MainActivity extends AppCompatActivity
                     aList.add(hm);
                 }
                 else if (Category.get(i) == id){
+                    hm.put("listview_title", listAuthor.get(i));
+                    hm.put("listview_discription", listTrack.get(i));
+                    aList.add(hm);
+                }
+            }
+        }
+
+        String[] from = {"listview_image", "listview_title", "listview_discription", "item_title"};
+        int[] to = {R.id.listview_image, R.id.listview_item_title, R.id.listview_item_short_description, R.id.add_item_title};
+
+        simpleAdapter = new SimpleAdapter(getBaseContext(), aList, R.layout.recycler_item, from, to);
+        androidListView = (ListView) findViewById(R.id.list_view);
+        androidListView.setAdapter(simpleAdapter);
+    }
+
+    public void initRecyclerViewByAuthor(String name){
+
+        aList = new ArrayList<HashMap<String, String>>();
+
+        for (int i = -1; i < listAuthor.size(); i++) {
+            HashMap<String, String> hm = new HashMap<String, String>();
+            if(i == -1){
+                hm.put("item_title", "Рандомить здесь");
+                hm.put("listview_image", Integer.toString(R.drawable.ic_shuffle_black_24dp));
+                aList.add(hm);
+            }
+            else {
+                if (listAuthor.get(i).equals(name)){
                     hm.put("listview_title", listAuthor.get(i));
                     hm.put("listview_discription", listTrack.get(i));
                     aList.add(hm);

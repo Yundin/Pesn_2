@@ -13,12 +13,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -32,6 +34,7 @@ public class MainActivity extends AppCompatActivity
     ArrayList <String> listTrack;
     ArrayList <Integer> Category;
     ArrayList <String> listOfCategories;
+    Toolbar toolbar;
 
     String[] arrayAuthor = new String[]{
             "Noize MC", "Лагерная", "РБС", "Валентин Стрыкало",
@@ -81,7 +84,7 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         initArrays();
@@ -90,41 +93,12 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Сорри, еще не готово", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        toggle.syncState();
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-
-        Menu menu = navigationView.getMenu();
-        subMenu = menu.addSubMenu(R.id.main_menu, Menu.NONE, 1, "Категории");
-        //subMenu.setIcon(R.drawable.ic_blur_on_black_24dp);
-
-        for (int i = 0; i < listOfCategories.size(); i++){
-            subMenu.add(Menu.NONE, i, 1, listOfCategories.get(i)).setCheckable(true);
-        }
-
-        subMenu2 = menu.addSubMenu(R.id.main_menu, Menu.NONE, 2, "Исполнители");
-        //subMenu2.setIcon(R.drawable.ic_mic_black_24dp);
-        ArrayList <String> passed = new ArrayList<>();
-        for (int i = 0; i < listAuthor.size(); i++){
-            int j;
-            for (j = 0; j < passed.size(); j++){
-                if (passed.get(j).equals(listAuthor.get(i)))
-                    break;
-            }
-            if (j == passed.size()){
-                subMenu2.add(Menu.NONE, Menu.NONE, 2, listAuthor.get(i)).setCheckable(true);
-                passed.add(listAuthor.get(i));
-            }
-        }
+        initNavDrawer();
 
         initRecyclerView(-1);
     }
@@ -186,24 +160,55 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    public void initRecyclerView(int id){
+    private void initNavDrawer(){
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        Menu menu = navigationView.getMenu();
+        subMenu = menu.addSubMenu(R.id.main_menu, Menu.NONE, 1, "Категории");
+        //subMenu.setIcon(R.drawable.ic_blur_on_black_24dp);
+
+        for (int i = 0; i < listOfCategories.size(); i++){
+            subMenu.add(Menu.NONE, i, 1, listOfCategories.get(i)).setCheckable(true);
+        }
+
+        subMenu2 = menu.addSubMenu(R.id.main_menu, Menu.NONE, 2, "Исполнители");
+        //subMenu2.setIcon(R.drawable.ic_mic_black_24dp);
+        ArrayList <String> passed = new ArrayList<>();
+        for (int i = 0; i < listAuthor.size(); i++){
+            int j;
+            for (j = 0; j < passed.size(); j++){
+                if (passed.get(j).equals(listAuthor.get(i)))
+                    break;
+            }
+            if (j == passed.size()){
+                subMenu2.add(Menu.NONE, Menu.NONE, 2, listAuthor.get(i)).setCheckable(true);
+                passed.add(listAuthor.get(i));
+            }
+        }
+    }
+
+    public void initRecyclerView(int id) {
 
         aList = new ArrayList<HashMap<String, String>>();
 
         for (int i = -1; i < listAuthor.size(); i++) {
             HashMap<String, String> hm = new HashMap<String, String>();
-            if(i == -1){
+            if (i == -1) {
                 hm.put("item_title", "Рандомить здесь");
                 hm.put("listview_image", Integer.toString(R.drawable.ic_shuffle_black_24dp));
                 aList.add(hm);
-            }
-            else {
+            } else {
                 if (id == -1) {
                     hm.put("listview_title", listAuthor.get(i));
                     hm.put("listview_discription", listTrack.get(i));
                     aList.add(hm);
-                }
-                else if (Category.get(i) == id){
+                } else if (Category.get(i) == id) {
                     hm.put("listview_title", listAuthor.get(i));
                     hm.put("listview_discription", listTrack.get(i));
                     aList.add(hm);
@@ -217,6 +222,19 @@ public class MainActivity extends AppCompatActivity
         simpleAdapter = new SimpleAdapter(getBaseContext(), aList, R.layout.recycler_item, from, to);
         androidListView = (ListView) findViewById(R.id.list_view);
         androidListView.setAdapter(simpleAdapter);
+        androidListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i == 0){
+                    Random random = new Random();
+                    int num = 1 + random.nextInt(adapterView.getCount() - 1);
+                    HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
+                    String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
+                    Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
     }
 
     public void initRecyclerViewByAuthor(String name){
@@ -245,6 +263,19 @@ public class MainActivity extends AppCompatActivity
         simpleAdapter = new SimpleAdapter(getBaseContext(), aList, R.layout.recycler_item, from, to);
         androidListView = (ListView) findViewById(R.id.list_view);
         androidListView.setAdapter(simpleAdapter);
+        androidListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i == 0){
+                    Random random = new Random();
+                    int num = 1 + random.nextInt(adapterView.getCount() - 1);
+                    HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
+                    String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
+                    Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
     }
 
     private void initArrays(){

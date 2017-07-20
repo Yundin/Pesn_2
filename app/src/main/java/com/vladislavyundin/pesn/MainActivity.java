@@ -1,8 +1,14 @@
 package com.vladislavyundin.pesn;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -17,10 +23,8 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.lang.reflect.Array;
+import java.util.*;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -35,6 +39,13 @@ public class MainActivity extends AppCompatActivity
     ArrayList <Integer> Category;
     ArrayList <String> listOfCategories;
     Toolbar toolbar;
+    NavigationView navigationView;
+    public static final String APP_PREFERENCES = "mysettings";
+    public static final String APP_PREFERENCES_LIST_AUTHOR = "listAuthor";
+    public static final String APP_PREFERENCES_LIST_TRACK = "listTrack";
+    public static final String APP_PREFERENCES_CATEGORY = "Category";
+    public static final String APP_PREFERENCES_LIST_CATEGORY = "listOfCategories";
+    SharedPreferences mSettings;
 
     String[] arrayAuthor = new String[]{
             "Noize MC", "Лагерная", "РБС", "Валентин Стрыкало",
@@ -81,8 +92,11 @@ public class MainActivity extends AppCompatActivity
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -93,8 +107,7 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Сорри, еще не готово", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                FabClick();
             }
         });
 
@@ -144,20 +157,90 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.all) {
             // Handle the camera action
             initRecyclerView(-1);
+            toolbar.setTitle("Все");
         } else if (id == R.id.add) {
-            NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-            Menu menu = navigationView.getMenu();
-            subMenu.add(R.id.group, listOfCategories.size() + 1, 1, "Новая категория").setCheckable(true);
-            return true;
+            Intent intent = new Intent(this, NewCat.class);
+            startActivityForResult(intent, 0);
         } else if (id == 0 && !item.getTitle().equals(listOfCategories.get(0))){
             initRecyclerViewByAuthor(item.getTitle().toString());
         } else {
             initRecyclerView(id);
+            toolbar.setTitle(listOfCategories.get(id));
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (data == null) {
+            return;
+        }
+        if (requestCode == 0) {
+            String name = data.getStringExtra("name");
+            listOfCategories.add(name);
+            initNavDrawer();
+            int id = listOfCategories.size() - 1;
+            navigationView.setCheckedItem(id);
+            initRecyclerView(id);
+            toolbar.setTitle(listOfCategories.get(id));
+        }
+        else {
+            String author = data.getStringExtra("author");
+            String track = data.getStringExtra("track");
+            String category = data.getStringExtra("category");
+            listAuthor.add(author);
+            listTrack.add(track);
+            Category.add(listOfCategories.indexOf(category));
+            if(getCheckedItem() != -1) {
+                initRecyclerView(listOfCategories.indexOf(category));
+                initNavDrawer();
+                navigationView.setCheckedItem(listOfCategories.indexOf(category));
+                toolbar.setTitle(listOfCategories.get(listOfCategories.indexOf(category)));
+            } else {
+                initNavDrawer();
+            }
+            Snackbar.make(findViewById(R.id.fab), "Клевая песня!", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        SharedPreferences.Editor editor = mSettings.edit();
+
+        String listAuthorString = TextUtils.join("·", listAuthor);
+        editor.putString("listAuthor", listAuthorString);
+
+        Set<String> listTrackSet = new LinkedHashSet<String>();
+        String listTrackString = TextUtils.join("·", listTrack);
+        editor.putString("listTrack", listTrackString);
+
+        Set<String> CategorySet = new LinkedHashSet<String>();
+        String s = "";
+        int count = 0;
+        for (int i : Category) {
+            if (count != 0) {
+                s += "·";
+            }
+            s += Integer.toString(i);
+            count++;
+        }
+        editor.putString("Category", s);
+
+        String listOfCategoriesString = TextUtils.join("·", listOfCategories);
+        editor.putString("listOfCategories", listOfCategoriesString);
+        editor.apply();
+    }
+
+    private void FabClick(){
+        Intent intent = new Intent(this, NewTrack.class);
+        intent.putExtra("Cats", listOfCategories);
+        intent.putExtra("Category", getCheckedItem());
+        startActivityForResult(intent, 1);
     }
 
     private void initNavDrawer(){
@@ -166,10 +249,12 @@ public class MainActivity extends AppCompatActivity
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
         Menu menu = navigationView.getMenu();
+        if(subMenu != null)
+            subMenu.clear();
         subMenu = menu.addSubMenu(R.id.main_menu, Menu.NONE, 1, "Категории");
         //subMenu.setIcon(R.drawable.ic_blur_on_black_24dp);
 
@@ -177,8 +262,9 @@ public class MainActivity extends AppCompatActivity
             subMenu.add(Menu.NONE, i, 1, listOfCategories.get(i)).setCheckable(true);
         }
 
+        if(subMenu2 != null)
+            subMenu2.clear();
         subMenu2 = menu.addSubMenu(R.id.main_menu, Menu.NONE, 2, "Исполнители");
-        //subMenu2.setIcon(R.drawable.ic_mic_black_24dp);
         ArrayList <String> passed = new ArrayList<>();
         for (int i = 0; i < listAuthor.size(); i++){
             int j;
@@ -226,12 +312,20 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (i == 0){
-                    Random random = new Random();
-                    int num = 1 + random.nextInt(adapterView.getCount() - 1);
-                    HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
-                    String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
-                    Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    if(adapterView.getCount() == 1) {
+                        Snackbar.make(view, "То, что мертво, умереть не может", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    } else if (adapterView.getCount() == 2){
+                        Snackbar.make(view, "Сам подумай, что выпадет", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    } else {
+                        Random random = new Random();
+                        int num = 1 + random.nextInt(adapterView.getCount() - 1);
+                        HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
+                        String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
+                        Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
                 }
             }
         });
@@ -267,12 +361,20 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (i == 0){
-                    Random random = new Random();
-                    int num = 1 + random.nextInt(adapterView.getCount() - 1);
-                    HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
-                    String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
-                    Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    if(adapterView.getCount() == 1) {
+                        Snackbar.make(view, "То, что мертво, умереть не может", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    } else if (adapterView.getCount() == 2){
+                        Snackbar.make(view, "Сам подумай, что выпадет", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    } else {
+                        Random random = new Random();
+                        int num = 1 + random.nextInt(adapterView.getCount() - 1);
+                        HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
+                        String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
+                        Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
                 }
             }
         });
@@ -280,24 +382,58 @@ public class MainActivity extends AppCompatActivity
 
     private void initArrays(){
 
-        listAuthor = new ArrayList<>();
-        for (int i = 0; i < arrayAuthor.length; i++){
-            listAuthor.add(arrayAuthor[i]);
-        }
-
-        listTrack = new ArrayList<>();
-        for (int i = 0; i < arrayTrack.length; i++){
-            listTrack.add(arrayTrack[i]);
-        }
-
         Category = new ArrayList<>();
-        for (int i = 0; i < arrayCategory.length; i++){
-            Category.add(arrayCategory[i]);
-        }
-
         listOfCategories = new ArrayList<>();
-        for (int i = 0; i < arrayOfCategories.length; i++){
-            listOfCategories.add(arrayOfCategories[i]);
+
+        if (mSettings.contains("listAuthor")) {
+
+            String la = mSettings.getString("listAuthor", "");
+            listAuthor = new ArrayList<>(Arrays.asList(la.split("·")));
+
+            String lt = mSettings.getString("listTrack", "");
+            listTrack = new ArrayList<>(Arrays.asList(lt.split("·")));
+
+            String s = mSettings.getString("Category", "");
+            List<String> strings = new ArrayList<>(Arrays.asList(s.split("·")));
+            for (String str: strings){
+                Category.add(Integer.parseInt(str));
+            }
+
+            String loc = mSettings.getString("listOfCategories", "");
+            listOfCategories = new ArrayList<>(Arrays.asList(loc.split("·")));
+        }
+        else {
+
+            listAuthor = new ArrayList<>();
+            for (int i = 0; i < arrayAuthor.length; i++) {
+                listAuthor.add(arrayAuthor[i]);
+            }
+
+            listTrack = new ArrayList<>();
+            for (int i = 0; i < arrayTrack.length; i++) {
+                listTrack.add(arrayTrack[i]);
+            }
+
+            Category = new ArrayList<>();
+            for (int i = 0; i < arrayCategory.length; i++) {
+                Category.add(arrayCategory[i]);
+            }
+
+            listOfCategories = new ArrayList<>();
+            for (int i = 0; i < arrayOfCategories.length; i++) {
+                listOfCategories.add(arrayOfCategories[i]);
+            }
         }
     }
+
+    private int getCheckedItem() {
+        for (int i = 0; i < subMenu.size(); i++) {
+            MenuItem item = subMenu.getItem(i);
+            if (item.isChecked()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
 }

@@ -1,8 +1,11 @@
 package com.vladislavyundin.pesn;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
@@ -41,10 +44,6 @@ public class MainActivity extends AppCompatActivity
     Toolbar toolbar;
     NavigationView navigationView;
     public static final String APP_PREFERENCES = "mysettings";
-    public static final String APP_PREFERENCES_LIST_AUTHOR = "listAuthor";
-    public static final String APP_PREFERENCES_LIST_TRACK = "listTrack";
-    public static final String APP_PREFERENCES_CATEGORY = "Category";
-    public static final String APP_PREFERENCES_LIST_CATEGORY = "listOfCategories";
     SharedPreferences mSettings;
 
     String[] arrayAuthor = new String[]{
@@ -126,27 +125,27 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        // Inflate the menu; this adds items to the action bar if it is present.
+//        getMenuInflater().inflate(R.menu.main, menu);
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        // Handle action bar item clicks here. The action bar will
+//        // automatically handle clicks on the Home/Up button, so long
+//        // as you specify a parent activity in AndroidManifest.xml.
+//        int id = item.getItemId();
+//
+//        //noinspection SimplifiableIfStatement
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
+//
+//        return super.onOptionsItemSelected(item);
+//    }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
@@ -308,27 +307,7 @@ public class MainActivity extends AppCompatActivity
         simpleAdapter = new SimpleAdapter(getBaseContext(), aList, R.layout.recycler_item, from, to);
         androidListView = (ListView) findViewById(R.id.list_view);
         androidListView.setAdapter(simpleAdapter);
-        androidListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0){
-                    if(adapterView.getCount() == 1) {
-                        Snackbar.make(view, "То, что мертво, умереть не может", Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
-                    } else if (adapterView.getCount() == 2){
-                        Snackbar.make(view, "Сам подумай, что выпадет", Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
-                    } else {
-                        Random random = new Random();
-                        int num = 1 + random.nextInt(adapterView.getCount() - 1);
-                        HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
-                        String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
-                        Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
-                    }
-                }
-            }
-        });
+        setListeners(id, "");
     }
 
     public void initRecyclerViewByAuthor(String name){
@@ -357,6 +336,10 @@ public class MainActivity extends AppCompatActivity
         simpleAdapter = new SimpleAdapter(getBaseContext(), aList, R.layout.recycler_item, from, to);
         androidListView = (ListView) findViewById(R.id.list_view);
         androidListView.setAdapter(simpleAdapter);
+        setListeners(0, name);
+    }
+
+    private void setListeners(final int id, final String name){
         androidListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -370,12 +353,83 @@ public class MainActivity extends AppCompatActivity
                     } else {
                         Random random = new Random();
                         int num = 1 + random.nextInt(adapterView.getCount() - 1);
-                        HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
+                        final HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(num);
                         String item_data = item.get("listview_title") + " — " + item.get("listview_discription");
-                        Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
+                        AlertDialog.Builder ad = new AlertDialog.Builder(MainActivity.this);
+                        ad.setTitle(item_data);
+                        ad.setMessage("Найти слова?");
+                        ad.setPositiveButton("Да", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int i) {
+                                Uri address = Uri.parse("https://www.google.ru/?gws_rd=ssl#newwindow=1&q=" + item.get("listview_title") + "+-+" + item.get("listview_discription") + "+аккорды+");
+                                Intent openlinkIntent = new Intent(Intent.ACTION_VIEW, address);
+                                startActivity(openlinkIntent);
+                            }
+                        });
+                        ad.setNegativeButton("Нет", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int i) {
+                                return;
+                            }
+                        });
+                        ad.setCancelable(true);
+                        AlertDialog alert = ad.create();
+                        alert.show();
+//                        Snackbar.make(view, item_data, Snackbar.LENGTH_LONG)
+//                                .setAction("Action", null).show();
                     }
                 }
+                else {
+                    AlertDialog.Builder ad = new AlertDialog.Builder(MainActivity.this);
+                    final HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(i);
+                    ad.setTitle("Найти слова " + item.get("listview_discription") + " ?");
+                    ad.setPositiveButton("Да", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int i) {
+                            Uri address = Uri.parse("https://www.google.ru/?gws_rd=ssl#newwindow=1&q=" + item.get("listview_title") + "+-+" + item.get("listview_discription") + "+аккорды+");
+                            Intent openlinkIntent = new Intent(Intent.ACTION_VIEW, address);
+                            startActivity(openlinkIntent);
+                        }
+                    });
+                    ad.setNegativeButton("Нет", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int i) {
+                            return;
+                        }
+                    });
+                    ad.setCancelable(true);
+                    AlertDialog alert = ad.create();
+                    alert.show();
+                }
+            }
+
+        });
+        androidListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(final AdapterView<?> adapterView, View view, int i, long l) {
+                AlertDialog.Builder ad = new AlertDialog.Builder(MainActivity.this);
+                final HashMap<String, String> item = (HashMap<String, String>) adapterView.getItemAtPosition(i);
+                ad.setTitle("Удалить " + item.get("listview_title") + " — " + item.get("listview_discription") + "?");
+                ad.setPositiveButton("Да", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int i) {
+                        int index = listTrack.indexOf(item.get("listview_discription"));
+                        listTrack.remove(index);
+                        listAuthor.remove(index);
+                        Category.remove(index);
+                        if (!name.equals("")){
+                            initRecyclerViewByAuthor(name);
+                        } else {
+                            initRecyclerView(id);
+                        }
+                        Snackbar.make(findViewById(R.id.fab), "Удалено", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
+                });
+                ad.setNegativeButton("Нет", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int i) {
+                        return;
+                    }
+                });
+                ad.setCancelable(true);
+                AlertDialog alert = ad.create();
+                alert.show();
+                return false;
             }
         });
     }
